@@ -1,0 +1,47 @@
+version: '2'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  kafka:
+    image: 'bitnami/kafka:latest'
+    container_name: kafka
+    ports:
+      - "9093:9093"
+    expose:
+      - "9093"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CREATE_TOPICS="kafka_capstone_event_bus:1:1"
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./bitnami/kafka:/bitnami/kafka
+
+  db:
+    image: postgres:13.4-buster
+    hostname: kafka-demo-db
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "postgres"
+    volumes:
+      - kafka-demo-db-data:/var/lib/postgresql/data
+    restart: always
+    ports:
+      - 5432:5432
+
+volumes:
+  kafka-demo-db-data:
+    name: kafka-demo-db-data
